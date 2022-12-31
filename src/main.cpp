@@ -22,27 +22,32 @@ void setup()
 
 	pServer = NimBLEDevice::createServer();
 
-	NimBLEService* pAuthorizedVehicleService = pServer->createService("pAVS");
+	NimBLEService* pAuthorizedVehicleService = pServer->createService("AAAA");
 	NimBLECharacteristic* pDateTimeCharacteristic = pAuthorizedVehicleService->createCharacteristic(
-												"DTC",
+												"BBBB",
 												NIMBLE_PROPERTY::READ |
 												NIMBLE_PROPERTY::WRITE |
 												/** Require a secure connection for read and write access */
 												NIMBLE_PROPERTY::READ_ENC |  // only allow reading if paired / encrypted
 												NIMBLE_PROPERTY::WRITE_ENC   // only allow writing if paired / encrypted
 												);
+	pDateTimeCharacteristic->setValue(3);
 
 	NimBLECharacteristic* pHashCharacteristic = pAuthorizedVehicleService->createCharacteristic(
-											"H4SH",
+											"CCCC",
 											NIMBLE_PROPERTY::NOTIFY
 											);
 
+	pHashCharacteristic->setValue("afavafv");
+
 	NimBLECharacteristic* pAliveTimeCharacteristic = pAuthorizedVehicleService->createCharacteristic(
-												"AliveTime",
+												"DDDD",
 												NIMBLE_PROPERTY::READ |
 												/** Require a secure connection for read and write access */
 												NIMBLE_PROPERTY::READ_ENC // only allow reading if paired / encrypted
 												);
+
+	pAliveTimeCharacteristic->setValue("afavafv");
 
 	/** Start the services when finished creating all Characteristics and Descriptors */
 	pAuthorizedVehicleService->start();
