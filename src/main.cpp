@@ -72,7 +72,29 @@ class ServerCallbacks : public NimBLEServerCallbacks
 };
 
 /** Handler class for characteristic actions */
-class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
+class DateTimeCharacteristicCallbacks : public NimBLECharacteristicCallbacks
+{
+	void onWrite(NimBLECharacteristic *pCharacteristic)
+	{
+		Serial.print(pCharacteristic->getUUID().toString().c_str());
+		Serial.print(": onWrite(), value: ");
+		Serial.println(pCharacteristic->getValue<long>());
+
+		/*Logic to calculate rolling code to send back to BLE Client*/
+		NimBLEService *pSvc = pServer->getServiceByUUID("AAAA");
+		if (pSvc)
+		{
+			NimBLECharacteristic *pChr = pSvc->getCharacteristic("CCCC");
+			if (pChr)
+			{
+				pChr->setValue(millis());
+				pChr->notify(true);
+			}
+		}
+	};
+};
+
+class AliveTimeCharacteristicCallbacks : public NimBLECharacteristicCallbacks
 {
 	void onRead(NimBLECharacteristic *pCharacteristic)
 	{
@@ -80,13 +102,10 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
 		Serial.print(": onRead(), value: ");
 		Serial.println(pCharacteristic->getValue().c_str());
 	};
+};
 
-	void onWrite(NimBLECharacteristic *pCharacteristic)
-	{
-		Serial.print(pCharacteristic->getUUID().toString().c_str());
-		Serial.print(": onWrite(), value: ");
-		Serial.println(pCharacteristic->getValue<long>());
-	};
+class HashNotificationCharacteristicCallbacks : public NimBLECharacteristicCallbacks
+{
 	/** Called before notification or indication is sent,
 	 *  the value can be changed here before sending if desired.
 	 */
@@ -137,7 +156,9 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks
 	};
 };
 
-static CharacteristicCallbacks chrCallbacks;
+static DateTimeCharacteristicCallbacks dateTimeChrCallbacks;
+static HashNotificationCharacteristicCallbacks hashNotifyChrCallbacks;
+static AliveTimeCharacteristicCallbacks aliveTimeChrCallbacks;
 
 void setup()
 {
@@ -169,13 +190,13 @@ void setup()
 			NIMBLE_PROPERTY::WRITE_ENC	// only allow writing if paired / encrypted
 	);
 	pDateTimeCharacteristic->setValue("hello");
-	pDateTimeCharacteristic->setCallbacks(&chrCallbacks);
+	pDateTimeCharacteristic->setCallbacks(&dateTimeChrCallbacks);
 
 	NimBLECharacteristic *pHashCharacteristic = pAuthorizedVehicleService->createCharacteristic(
 		"CCCC",
 		NIMBLE_PROPERTY::NOTIFY);
 
-	pHashCharacteristic->setCallbacks(&chrCallbacks);
+	pHashCharacteristic->setCallbacks(&hashNotifyChrCallbacks);
 
 	NimBLECharacteristic *pAliveTimeCharacteristic = pAuthorizedVehicleService->createCharacteristic(
 		"DDDD",
@@ -186,7 +207,7 @@ void setup()
 			NIMBLE_PROPERTY::WRITE_ENC	// only allow writing if paired / encrypted
 	);
 
-	pAliveTimeCharacteristic->setCallbacks(&chrCallbacks);
+	pAliveTimeCharacteristic->setCallbacks(&aliveTimeChrCallbacks);
 
 	/** Start the services when finished creating all Characteristics and Descriptors */
 	pAuthorizedVehicleService->start();
